@@ -1,11 +1,10 @@
 
 import React, { useState } from 'react';
-import { Post, User } from '../types';
+import { Post, User } from '../types.ts';
 
 interface PostCardProps {
   post: Post;
   currentUser: User | null;
-  // Fix for Error in file components/PostCard.tsx on line 20: Expected 1 arguments, but got 2.
   showToast: (m: string, type?: 'info' | 'success' | 'warning') => void;
 }
 
@@ -14,6 +13,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, currentUser, showToast }) => 
   const [reposted, setReposted] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes);
   const [repostCount, setRepostCount] = useState(post.reposts);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const toggleLike = () => {
     setLiked(!liked);
@@ -27,8 +27,19 @@ const PostCard: React.FC<PostCardProps> = ({ post, currentUser, showToast }) => 
     showToast(reposted ? 'Removed repost' : 'Reposted successfully!', 'success');
   };
 
+  const handleShare = async () => {
+    const postUrl = `https://nexus.platform/post/${post.id}`;
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      showToast('Link copied to clipboard!', 'success');
+    } catch (err) {
+      showToast('Failed to copy link', 'warning');
+    }
+  };
+
   const handleAction = (action: string) => {
     showToast(`${action} functionality coming soon!`);
+    setIsMenuOpen(false);
   };
 
   return (
@@ -46,15 +57,35 @@ const PostCard: React.FC<PostCardProps> = ({ post, currentUser, showToast }) => 
               <span className="text-slate-700">•</span>
               <span className="text-xs text-slate-500 font-medium">2h</span>
             </div>
-            <div className="relative group/menu">
+            <div className="relative">
               <button 
-                onClick={() => handleAction('Post Menu')}
-                className="p-2 text-slate-500 hover:text-slate-300 hover:bg-slate-700 rounded-xl transition-all"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className={`p-2 rounded-xl transition-all ${isMenuOpen ? 'bg-slate-700 text-blue-400' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-700'}`}
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                 </svg>
               </button>
+
+              {isMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setIsMenuOpen(false)}></div>
+                  <div className="absolute right-0 mt-2 w-48 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl py-2 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <button onClick={() => handleAction('Report Post')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-red-400 hover:bg-red-500/10 transition-colors flex items-center gap-3">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                      Report Content
+                    </button>
+                    <button onClick={() => handleAction('Mute User')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-3">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+                      Mute @{post.authorUsername}
+                    </button>
+                    <button onClick={() => handleAction('Embed Post')} className="w-full text-left px-4 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-800 transition-colors flex items-center gap-3">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                      Embed Post
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -86,7 +117,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, currentUser, showToast }) => 
                 const totalVotes = post.poll!.votes.reduce((a, b) => a + b, 0);
                 const percentage = Math.round((post.poll!.votes[idx] / totalVotes) * 100);
                 return (
-                  <div key={idx} className="relative cursor-pointer group/poll active:scale-[0.99] transition-transform" onClick={() => showToast(`Voted for ${option}`)}>
+                  <div key={idx} className="relative cursor-pointer group/poll active:scale-[0.99] transition-transform" onClick={() => showToast(`Voted for ${option}`, 'success')}>
                     <div className="h-12 border border-slate-700 rounded-xl flex items-center px-4 z-10 relative overflow-hidden transition-all group-hover/poll:border-blue-500/50">
                       <div className="absolute inset-0 bg-blue-500/10 transition-all duration-700 ease-out" style={{ width: `${percentage}%` }}></div>
                       <span className="flex-1 text-sm font-bold z-10 text-slate-200">{option}</span>
@@ -138,7 +169,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, currentUser, showToast }) => 
             </button>
 
             <button 
-              onClick={() => handleAction('Share')}
+              onClick={handleShare}
               className="flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-300 hover:text-indigo-400 hover:bg-indigo-400/5 active:scale-90"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

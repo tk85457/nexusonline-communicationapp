@@ -11,13 +11,19 @@ export const geminiService = {
     try {
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Analyze the following social media post for safety guidelines (no hate speech, spam, or harmful content). 
-        Return a JSON object with: 
-        - "safe": boolean
-        - "reason": string (if unsafe)
-        - "sentiment": string (positive, negative, neutral)
+        contents: `You are a strict content moderator for Nexus, a high-quality community platform. 
+        Analyze the following user-generated content for:
+        1. Hate speech or harassment.
+        2. Spam or malicious links.
+        3. Harmful misinformation.
+        4. Sexually explicit content.
         
-        Content: "${content}"`,
+        Return a JSON object with: 
+        - "safe": boolean (true only if content is perfectly fine)
+        - "reason": string (a short, clear explanation of why it was flagged, if unsafe)
+        - "sentiment": string (one word: positive, negative, or neutral)
+        
+        User Content: "${content.replace(/"/g, '\\"')}"`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -32,10 +38,15 @@ export const geminiService = {
         }
       });
       
-      return JSON.parse(response.text || '{}');
+      const result = JSON.parse(response.text || '{}');
+      return {
+        safe: result.safe ?? true,
+        reason: result.reason || 'Content may violate community standards.',
+        sentiment: result.sentiment || 'neutral'
+      };
     } catch (error) {
       console.error("Moderation failed", error);
-      return { safe: true, sentiment: 'neutral' }; // Fallback
+      return { safe: true, sentiment: 'neutral' }; // Fallback to safe if API fails for UX
     }
   },
 
