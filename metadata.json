@@ -1,0 +1,8 @@
+{
+  "name": "Nexus - Unified Social & Community Platform",
+  "description": "A high-performance social media platform with creator tools, AI-powered moderation, and topic-based communities.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
